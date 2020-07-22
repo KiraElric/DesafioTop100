@@ -1,0 +1,58 @@
+--N°1:Crear base de datos
+CREATE DATABASE peliculas;
+
+--Cambiar a la Base de datos creada
+\c peliculas;
+
+--N°2:Crear tabla pelicula
+CREATE TABLE pelicula(
+  id INT,
+  nombre_pelicula VARCHAR,
+  año_estreno SMALLINT,
+  director VARCHAR,
+  PRIMARY KEY (id)
+);
+
+--N°2:Crear tabla reparto
+CREATE TABLE reparto(
+  id INT,
+  nombre_actor VARCHAR,
+  FOREIGN KEY (id) REFERENCES pelicula(id)
+);
+
+--En la terminal, copiar los archivos al contenedor de Docker
+docker cp Apoyo_Desafio_2-Top_100 postgres-server:/home/
+
+--N°3:Cargar datos a la tabla peliculas (En la Base de Datos peliculas dentro del contenedor postgres-server)
+\copy pelicula FROM '/home/Apoyo_Desafio_2-Top_100/peliculas.csv' CSV HEADER;
+
+--N°3:Cargar datos a la tabla reparto (En la Base de Datos peliculas dentro del contenedor postgres-server)
+\copy reparto FROM '/home/Apoyo_Desafio_2-Top_100/reparto.csv' CSV;
+
+--N°4:Listar todos los actores que aparecen en la pelicula 'Titanic', indicando el titulo de la pelicula, año estreno, director y reparto
+SELECT p.nombre_pelicula,p.año_estreno,p.director,r.nombre_actor FROM pelicula AS p INNER JOIN reparto AS r 
+ON p.id=r.id WHERE p.nombre_pelicula='Titanic';
+
+--N°5:Listar las peliculas donde actue Harrison Ford
+SELECT p.nombre_pelicula FROM pelicula AS p INNER JOIN reparto AS r ON p.id=r.id 
+WHERE r.nombre_actor='Harrison Ford';
+
+--N°6:Listar los 10 directores mas polulares, indicando su nombre y cantidad de peliculas que aparecen en el Top-100
+SELECT director, COUNT(nombre_pelicula) AS cantidad_peliculas 
+FROM pelicula GROUP BY director ORDER BY cantidad_peliculas DESC LIMIT 10;
+
+--N°7:Indicar cuantos actores distintos hay
+SELECT COUNT(nombre_actor) AS cantidad_actores_distintos 
+FROM (SELECT DISTINCT nombre_actor FROM reparto) AS actores;
+
+--N°8:Indicar las peliculas estrenadas entre los años 1990 y 1999 (ambos incluidos) ordenadas por titulo de manera ascendente
+SELECT nombre_pelicula,año_estreno FROM pelicula 
+WHERE año_estreno BETWEEN 1990 AND 1999 ORDER BY nombre_pelicula ASC; 
+
+--N°9:Listar el reparto de las peliculas lanzadas el año 2001
+SELECT p.nombre_pelicula,r.nombre_actor FROM pelicula AS p INNER JOIN reparto AS r ON p.id=r.id
+WHERE p.año_estreno=2001;
+
+--N°10:Listar los actores de la pelicula más nueva
+SELECT nombre_actor FROM reparto
+WHERE id=(SELECT id FROM pelicula ORDER BY año_estreno DESC LIMIT 1);
